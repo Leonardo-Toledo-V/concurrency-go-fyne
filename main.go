@@ -30,12 +30,14 @@ func load(filePath string) image.Image {
     return imgData.(image.Image)
 }
 
+
 func main() {
     myApp := app.New()
     w := myApp.NewWindow("Tom and Jerry game")
 
     background := load("./assets/tom-jerry.png")
-    playerSprites := load("./assets/tom-sprite.png")
+    tomSprites := load("./assets/tom-sprite.png")
+	/* jerrySprites := load("./assets/jerry-sprite.png")  */
 
     now := time.Now().UnixMilli()
     game := models.NewGame(
@@ -43,12 +45,18 @@ func main() {
         500,
         10,
         now,
-        4,
+        1,
 	)
 
     fpsInterval := int64(1000 / game.GetFps())
 
-    player := models.NewPlayer(100, 200, 40, 72, 0, 0, 4, 3, 0, 1, 2, 9, 0, 0)
+    player := models.NewTom(100, 200, 40, 72, 0, 0, 4, 3, 0, 1, 2, 25, 0, 0)
+
+
+	/* jerry := models.NewJerry(200, 200, 40, 72, 0, 0, 4, 3, 0, 1, 2, 25, 0, 0)
+	fmt.Println(jerry) */
+	
+
 
     img := canvas.NewImageFromImage(background)
     img.FillMode = canvas.ImageFillOriginal
@@ -58,7 +66,7 @@ func main() {
     playerImg := canvas.NewRasterFromImage(sprite)
     spriteSize := image.Pt(player.GetWidth(), player.GetHeight())
 
-    c := container.New(layout.NewMaxLayout(), img, playerImg)
+    c := container.New(layout.NewStackLayout(), img, playerImg)
     w.SetContent(c)
     w.Canvas().SetOnTypedKey(func(k *fyne.KeyEvent) {
         switch k.Name {
@@ -78,7 +86,7 @@ func main() {
             }
             player.SetFrameY(player.GetLeftY())
         case fyne.KeyRight:
-            if player.GetX() < int(game.GetWidth())-player.GetWidth()-game.GetMargin() {
+            if player.GetX() < int(game.GetWidth())-(player.GetWidth())-game.GetMargin() {
                 player.SetXMov(player.GetSpeed())
             }
             player.SetFrameY(player.GetRightY())
@@ -103,7 +111,7 @@ func main() {
                 r := image.Rectangle{dp, dp.Add(spriteSize)}
 
                 draw.Draw(sprite, sprite.Bounds(), image.Transparent, image.ZP, draw.Src)
-                draw.Draw(sprite, r, playerSprites, sr.Min, draw.Src)
+                draw.Draw(sprite, r, tomSprites, sr.Min, draw.Src)
                 playerImg = canvas.NewRasterFromImage(sprite)
 
                 if player.GetXMov() != 0 || player.GetYMov() != 0 {
