@@ -68,15 +68,20 @@ func main() {
 
 	// Variables para el cronómetro y el marcador
 	var (
-		startTime   time.Time
-		score       int
-		timerLabel  = canvas.NewText("", color.White)
-		scoreLabel  = canvas.NewText("Score: 0", color.White)
+		startTime  time.Time
+		score      int
+		timerLabel = canvas.NewText("", color.White)
+		scoreLabel = canvas.NewText("Score: 0", color.White)
 	)
 
 	// Establece el estilo de texto para el cronómetro como negritas
 	timerLabel.TextStyle = fyne.TextStyle{Bold: true}
 	scoreLabel.TextStyle = fyne.TextStyle{Bold: true}
+
+	// Variable para rastrear si el juego ha sido ganado
+	var hasWon bool
+	var winTime time.Time
+	_ = winTime
 
 	go func() {
 		startTime = time.Now()
@@ -119,6 +124,11 @@ func main() {
 					// Incrementa el marcador cuando atrapas a Jerry
 					score++
 					scoreLabel.Text = "Score: " + strconv.Itoa(score)
+
+					if score == 15 && !hasWon {
+						hasWon = true
+						winTime = time.Now()
+					}
 				}
 
 				if player.GetXMov() != 0 || player.GetYMov() != 0 {
@@ -142,6 +152,32 @@ func main() {
 
 	infoContainer := container.NewVBox(timerLabel, scoreLabel)
 	c.Add(infoContainer)
+
+	// Después del bucle principal, agrega una goroutine para mostrar el mensaje de "Has ganado"
+	go func() {
+		for !hasWon {
+			// Espera hasta que el juego se gane
+			time.Sleep(time.Millisecond)
+		}
+
+		elapsedDuration := time.Since(startTime)
+		elapsedSeconds := int(elapsedDuration.Seconds())
+
+		// Formatea la duración como "Xs"
+		elapsedTimeString := strconv.Itoa(elapsedSeconds) + "s"
+
+		wonLabel := canvas.NewText("Has ganado con un tiempo de "+ elapsedTimeString, color.White)
+		wonLabel.TextSize = 30
+		wonLabel.TextStyle = fyne.TextStyle{Bold: true}
+
+		// Crea un contenedor para mostrar el mensaje y el tiempo
+		winContainer := container.NewVBox(wonLabel)
+		winContainer.Layout = layout.NewCenterLayout()
+
+		// Actualiza el contenido de la ventana para mostrar el mensaje y el tiempo
+		w.SetContent(winContainer)
+
+	}()
 
 	w.SetContent(c)
 
