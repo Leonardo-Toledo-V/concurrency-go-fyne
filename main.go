@@ -43,14 +43,15 @@ func main() {
 
 	now := time.Now().UnixMilli()
 	game := models.NewGame(
-		800,
-		500,
+		564,
+		314,
 		10,
 		now,
-		1,
+		10,
 	)
 
-	fpsInterval := int64(1000 / game.GetFps())
+	// Ajusta el intervalo de actualización de la pantalla
+	fpsInterval := time.Second / time.Duration(game.GetFps())
 
 	player := models.NewTom(100, 200, 40, 72, 0, 0, 4, 3, 0, 1, 2, 25, 0, 0)
 	jerry := models.NewJerry(200, 200, 40, 72, 0, 0, 4, 3, 0, 1, 2, 25, 0, 0)
@@ -92,7 +93,7 @@ func main() {
 			now := time.Now().UnixMilli()
 			elapsed := now - game.GetThen()
 
-			if elapsed > fpsInterval {
+			if elapsed > fpsInterval.Milliseconds() {
 				game.SetThen(now)
 
 				draw.Draw(sprite, sprite.Bounds(), image.Transparent, image.ZP, draw.Src)
@@ -150,6 +151,37 @@ func main() {
 		}
 	}()
 
+// Agrega una goroutine para controlar el movimiento suave de Jerry en todas las direcciones
+go func() {
+    for {
+        // Pausa durante un tiempo aleatorio antes de que Jerry se mueva nuevamente
+        sleepDuration := time.Duration(rand.Intn(1000) + 500) * time.Millisecond
+        time.Sleep(sleepDuration)
+
+        // Genera una nueva posición aleatoria dentro de los límites de la pantalla
+        randX := rand.Intn(int(game.GetWidth())-jerry.GetWidth()-game.GetMargin()) + game.GetMargin()
+        randY := rand.Intn(int(game.GetHeight())-jerry.GetHeight()-game.GetMargin()) + game.GetMargin()
+
+        // Calcula la cantidad de pasos necesarios para llegar a la nueva posición
+        steps := 100
+        stepX := float64(randX-jerry.GetX()) / float64(steps)
+        stepY := float64(randY-jerry.GetY()) / float64(steps)
+
+        for i := 0; i < steps; i++ {
+            // Realiza un paso hacia la nueva posición
+            jerry.SetX(jerry.GetX() + int(stepX))
+            jerry.SetY(jerry.GetY() + int(stepY))
+
+            // Actualiza la pantalla después de cada paso
+            c.Refresh()
+
+            // Pausa para hacer que el movimiento sea visible
+            time.Sleep(time.Millisecond * 10)
+        }
+    }
+}()
+
+
 	infoContainer := container.NewVBox(timerLabel, scoreLabel)
 	c.Add(infoContainer)
 
@@ -166,7 +198,7 @@ func main() {
 		// Formatea la duración como "Xs"
 		elapsedTimeString := strconv.Itoa(elapsedSeconds) + "s"
 
-		wonLabel := canvas.NewText("Has ganado con un tiempo de "+ elapsedTimeString, color.White)
+		wonLabel := canvas.NewText("Has ganado con un tiempo de "+elapsedTimeString, color.White)
 		wonLabel.TextSize = 30
 		wonLabel.TextStyle = fyne.TextStyle{Bold: true}
 
