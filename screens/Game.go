@@ -96,9 +96,10 @@ func VideogameSettings(w fyne.Window, player *models.Tom, jerry *models.Jerry, s
 				// Incrementa el marcador cuando atrapas a Jerry
 				score++
 				scoreLabel.Text = "Score: " + strconv.Itoa(score)
-				if score == 10 && !hasWon {
+				if score == 8 && !hasWon {
 					hasWon = true
 					winTime = time.Now()
+					TimerLabel(hasWon, startTime, w)
 				}
 			}
 			// Dibuja el sprite de spike
@@ -186,7 +187,6 @@ func JerryMovement(jerry *models.Jerry, player *models.Tom, c *fyne.Container) {
 		}
 
 		// Lógica para el movimiento automático de Jerry
-		// Esto puede ser similar a la lógica que ya tienes para mover a Jerry hacia Tom
 
 		// Obtiene la posición actual de Tom
 		tomX, tomY := player.GetX(), player.GetY()
@@ -383,7 +383,6 @@ func NewGame(w fyne.Window) {
 	go JerryMovement(jerry, player, c)
 	go SpikeMovement(spike, player, c)
 	go TomMovement(w, game, player)
-	go TimerLabel(hasWon, startTime, w)
 
 	infoContainer := container.NewVBox(timerLabel, scoreLabel)
 	c.Add(infoContainer)

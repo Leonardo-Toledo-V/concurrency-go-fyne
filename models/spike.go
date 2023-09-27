@@ -166,7 +166,5 @@ func (s *Spike) CollidesWith(player *Tom) bool {
         // Hay superposición, lo que significa que colisionaron
         return true
     }
-
-    // No hay superposición, no colisionaron
     return false
 }
