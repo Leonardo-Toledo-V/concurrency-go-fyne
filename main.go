@@ -148,7 +148,7 @@ func VideogameSettings(w fyne.Window,
 }
 
 func DecodeAudio(){
-	context, decoder, audioFile, err := loadAudio("music/music.mp3")
+	context, decoder, audioFile, err := loadAudio("assets/tom-jerry-theme-tune.mp3")
 	if err != nil {
 		log.Fatal("Error cargando la música:", err)
 	}
