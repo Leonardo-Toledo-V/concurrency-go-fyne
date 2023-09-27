@@ -50,7 +50,6 @@ func (m *MainScene) ExitGame() {
 	m.window.Close()
 }
 
-
 func (m *MainScene) StartGame() {
 	NewGame(m.window)
 }

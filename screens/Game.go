@@ -96,8 +96,7 @@ func VideogameSettings(w fyne.Window, player *models.Tom, jerry *models.Jerry, s
 				// Incrementa el marcador cuando atrapas a Jerry
 				score++
 				scoreLabel.Text = "Score: " + strconv.Itoa(score)
-
-				if score == 15 && !hasWon {
+				if score == 10 && !hasWon {
 					hasWon = true
 					winTime = time.Now()
 				}
@@ -108,19 +107,16 @@ func VideogameSettings(w fyne.Window, player *models.Tom, jerry *models.Jerry, s
 
 			dpSpike := image.Pt(spike.GetX(), spike.GetY())
 			rSpike := image.Rectangle{dpSpike, dpSpike.Add(spriteSize)}
-
 			draw.Draw(sprite, rSpike, spikeSprites, srSpike.Min, draw.Over)
 			spikeImg = canvas.NewRasterFromImage(sprite)
 
 			if r.Overlaps(rSpike) {
-				// Si el jugador colisiona con Spike, reduce un punto del marcador
+				// Si Tom colisiona con Spike, reduce un punto del marcador
 				if score > 0 {
 					score--
 					scoreLabel.Text = "Score: " + strconv.Itoa(score)
 				}
-
-				// Luego, puedes ajustar la posición de Spike como prefieras
-				// Por ejemplo, puedes moverlo a una posición aleatoria
+				// Mover a spike a una posición aleatoria
 				randX := rand.Intn(400) + 100
 				randY := rand.Intn(121) + 100
 				spike.SetX(randX)
@@ -136,7 +132,6 @@ func VideogameSettings(w fyne.Window, player *models.Tom, jerry *models.Jerry, s
 			} else {
 				player.SetFrameX(0)
 			}
-
 			// Actualiza el cronómetro
 			elapsedTime := time.Since(startTime)
 			timerLabel.Text = "Time: " + elapsedTime.Round(time.Second).String()
@@ -146,7 +141,7 @@ func VideogameSettings(w fyne.Window, player *models.Tom, jerry *models.Jerry, s
 }
 
 func PlayBackgroundAudio() {
-		context, decoder, audioFile, err := loadAudio("assets/tom-jerry.mp3")
+		context, decoder, audioFile, err := loadAudio("audio/tom-jerry.mp3")
 		if err != nil {
 			log.Fatal("Error cargando la música:", err)
 		}
