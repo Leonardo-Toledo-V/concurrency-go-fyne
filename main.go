@@ -147,22 +147,6 @@ func VideogameSettings(w fyne.Window,
 	}
 }
 
-func DecodeAudio(){
-	context, decoder, audioFile, err := loadAudio("assets/tom-jerry-theme-tune.mp3")
-	if err != nil {
-		log.Fatal("Error cargando la música:", err)
-	}
-
-	defer context.Close()
-	defer audioFile.Close()
-
-	player := context.NewPlayer()
-
-	if _, err := io.Copy(player, decoder); err != nil {
-		log.Fatal("Error reproduciendo la música:", err)
-	}
-}
-
 func loadAudio(filePath string) (*oto.Context, *mp3.Decoder, *os.File, error) {
     audioFile, err := os.Open(filePath)
     if err != nil {
@@ -180,8 +164,209 @@ func loadAudio(filePath string) (*oto.Context, *mp3.Decoder, *os.File, error) {
         audioFile.Close() // Cerrar el archivo si hay un error
         return nil, nil, nil, err
     }
-
     return context, decoder, audioFile, nil
+}
+
+func PlayBackgroundAudio(){
+	for {
+        context, decoder, audioFile, err := loadAudio("assets/tom-and-jerry-theme-tune.mp3")
+        if err != nil {
+            log.Fatal("Error cargando la música:", err)
+        }
+        player := context.NewPlayer()
+        if _, err := io.Copy(player, decoder); err != nil {
+            log.Fatal("Error reproduciendo la música:", err)
+        }
+        context.Close()
+        audioFile.Close()
+    }
+}
+
+func JerryMovement(jerry *models.Jerry, player *models.Tom, c *fyne.Container){
+	// Temporizador para cambiar el sprite de Jerry
+	spriteTicker := time.NewTicker(200 * time.Millisecond)
+	defer spriteTicker.Stop()
+	for {
+		select {
+		case <-spriteTicker.C:
+			// Cambia el sprite de Jerry aquí
+			// Ajusta la dirección de animación según sea necesario
+			// Actualiza la imagen de Jerry en la pantalla
+
+			// Por ejemplo, puedes hacer que Jerry tenga una animación básica de caminar
+			if jerry.GetXMov() < 0 {
+				// Movimiento hacia la izquierda, ajusta los sprites para la izquierda
+				jerry.SetFrameY(jerry.GetLeftY())
+			} else if jerry.GetXMov() > 0 {
+				// Movimiento hacia la derecha, ajusta los sprites para la derecha
+				jerry.SetFrameY(jerry.GetRightY())
+			} else if jerry.GetYMov() < 0 {
+				// Movimiento hacia arriba, ajusta los sprites para arriba
+				jerry.SetFrameY(jerry.GetUpY())
+			} else if jerry.GetYMov() > 0 {
+				// Movimiento hacia abajo, ajusta los sprites para abajo
+				jerry.SetFrameY(jerry.GetDownY())
+			} else {
+				// Jerry no está en movimiento, establece la animación de caminar hacia abajo
+				jerry.SetFrameY(jerry.GetDownY())
+			}
+
+			jerry.SetFrameX((jerry.GetFrameX() + 1) % jerry.GetCyclesX())
+		}
+
+		// Lógica para el movimiento automático de Jerry
+		// Esto puede ser similar a la lógica que ya tienes para mover a Jerry hacia Tom
+
+		// Obtiene la posición actual de Tom
+		tomX, tomY := player.GetX(), player.GetY()
+
+		// Calcula la diferencia en coordenadas entre Jerry y Tom
+		deltaX := jerry.GetX() - tomX
+		deltaY := jerry.GetY() - tomY
+
+		// Calcula la nueva posición de Jerry en dirección opuesta a Tom, pero un poco más alejada
+		// y ajusta la dirección en función de la distancia a Tom
+		randX := jerry.GetX()
+		randY := jerry.GetY() + 2
+
+		// Ajusta la dirección horizontal
+		if deltaX != 0 {
+			if deltaX > 0 {
+				// Tom está a la izquierda de Jerry, ajusta los sprites para la izquierda
+				jerry.SetFrameY(jerry.GetRightY())
+			} else {
+				// Tom está a la derecha de Jerry, ajusta los sprites para la derecha
+				jerry.SetFrameY(jerry.GetLeftY())
+			}
+			randX += 2 * deltaX
+		} else if deltaY != 0 {
+			randY += 2 * deltaY
+		}
+
+		// Verifica si la nueva posición está dentro de los límites del juego y ajusta si es necesario
+		if randX < 10 {
+			randX = 10
+		}
+		if randX > 1074 - jerry.GetWidth() {
+			randX = 1074 - jerry.GetWidth()
+		}
+		if randY < 200 {
+			randY = 200
+		}
+		if randY > 240-jerry.GetHeight() {
+			randY = 240 - jerry.GetHeight()
+		}
+
+		// Calcula la cantidad de pasos necesarios para llegar a la nueva posición
+		steps := 35
+		stepX := float64(randX-jerry.GetX()) / float64(steps)
+		stepY := float64(randY-jerry.GetY()) / float64(steps)
+
+		for i := 0; i < steps; i++ {
+			// Realiza un paso hacia la nueva posición
+			jerry.SetX(jerry.GetX() + int(stepX))
+			jerry.SetY(jerry.GetY() + int(stepY))
+			// Verifica si la nueva posición está dentro de los límites del juego y ajusta si es necesario
+
+			if jerry.GetX() < 10 {
+				jerry.SetX(10)
+			}
+			if jerry.GetX() > 1074-jerry.GetWidth() {
+				jerry.SetX(1074 - jerry.GetWidth())
+			}
+			if jerry.GetY() < 100 {
+				jerry.SetY(100)
+			}
+			if jerry.GetY() > 240-jerry.GetHeight() {
+				jerry.SetY(240 - jerry.GetHeight())
+			}
+			// Actualiza la pantalla después de cada paso
+			c.Refresh()
+
+			// Pausa para hacer que el movimiento sea visible
+			time.Sleep(time.Millisecond * 10)
+		}
+	}
+}
+
+func SpikeMovement(spike *models.Spike, player *models.Tom, c *fyne.Container) {
+	// Temporizador para cambiar el sprite de Spike
+	spriteTicker := time.NewTicker(200 * time.Millisecond)
+	defer spriteTicker.Stop()
+	for {
+		select {
+		case <-spriteTicker.C:
+			// Obtiene la posición actual de Tom (jugador)
+			tomX, tomY := player.GetX(), player.GetY()
+
+			// Calcula la diferencia en coordenadas entre Spike y Tom
+			deltaX := tomX - spike.GetX()
+			deltaY := tomY - spike.GetY()
+
+			// Calcula la distancia entre Spike y Tom
+			distance := math.Sqrt(float64(deltaX*deltaX + deltaY*deltaY))
+
+			// Define la velocidad de Spike (ajusta este valor según sea necesario)
+			spikeSpeed := 15
+
+			// Calcula la nueva posición de Spike hacia Tom
+			if distance > 0 {
+				// Calcula las cantidades de movimiento en las direcciones x e y
+				moveX := spikeSpeed * deltaX / int(distance)
+				moveY := spikeSpeed * deltaY / int(distance)
+
+				// Actualiza la posición de Spike hacia Tom
+				spike.SetX(spike.GetX() + moveX)
+				spike.SetY(spike.GetY() + moveY)
+			}
+			// Actualiza la pantalla después de cada movimiento de Spike
+			c.Refresh()
+		}
+	}
+};
+
+func TimerLabel(hasWon bool, startTime time.Time, w fyne.Window){
+	for !hasWon {
+		time.Sleep(time.Millisecond)
+	}
+	elapsedDuration := time.Since(startTime)
+	elapsedSeconds := int(elapsedDuration.Seconds())
+	elapsedTimeString := strconv.Itoa(elapsedSeconds) + "s"
+
+	wonLabel := canvas.NewText("Has ganado con un tiempo de "+elapsedTimeString, color.White)
+	wonLabel.TextSize = 30
+	wonLabel.TextStyle = fyne.TextStyle{Bold: true}
+	winContainer := container.NewVBox(wonLabel)
+	winContainer.Layout = layout.NewCenterLayout()
+	// Actualiza el contenido de la ventana para mostrar el mensaje y el tiempo
+	w.SetContent(winContainer)
+};
+
+func TomMovement(w fyne.Window, game *models.Game, player *models.Tom){
+	w.Canvas().SetOnTypedKey(func(k *fyne.KeyEvent) {
+		switch k.Name {
+		case fyne.KeyDown:
+			if player.GetY() < int(game.GetHeight())-player.GetHeight()-game.GetMargin() {
+				player.SetYMov(player.GetSpeed())
+			}
+			player.SetFrameY(player.GetDownY())
+		case fyne.KeyUp:
+			if player.GetY() > 200 {
+				player.SetYMov(-(player.GetSpeed()))
+			}
+			player.SetFrameY(player.GetUpY())
+		case fyne.KeyLeft:
+			if player.GetX() > game.GetMargin() {
+				player.SetXMov(-(player.GetSpeed()))
+			}
+			player.SetFrameY(player.GetLeftY())
+		case fyne.KeyRight:
+			if player.GetX() < int(game.GetWidth())-(player.GetWidth())-game.GetMargin() {
+				player.SetXMov(player.GetSpeed())
+			}
+			player.SetFrameY(player.GetRightY())
+		}
+	})
 }
 
 
@@ -213,223 +398,29 @@ func main() {
 	spriteSize := image.Pt(player.GetWidth(), player.GetHeight())
 
 	c := container.New(layout.NewBorderLayout(nil, nil, nil, nil), img, playerImg, jerryImg, spikeImg)
-	// Variables para el cronómetro y el marcador
 	var (
 		startTime  time.Time
 		score      int
 		timerLabel = canvas.NewText("", color.White)
 		scoreLabel = canvas.NewText("Score: 0", color.White)
 	)
-
-	// Establece el estilo de texto para el cronómetro como negritas
 	timerLabel.TextStyle = fyne.TextStyle{Bold: true}
 	scoreLabel.TextStyle = fyne.TextStyle{Bold: true}
 
-	// Variable para rastrear si el juego ha sido ganado
 	var hasWon bool
 	var winTime time.Time
 	_ = winTime
 
-	// Goroutine que controla el juego
 	go VideogameSettings(w, player, jerry, spike, tomSprites, jerrySprites, spikeSprites, background, game, sprite, playerImg, jerryImg, spikeImg, spriteSize, timerLabel, scoreLabel, score, startTime, hasWon, winTime, c)
-
-	// Goroutine para mover a Jerry
-go func() {
-		// Temporizador para cambiar el sprite de Jerry
-		spriteTicker := time.NewTicker(200 * time.Millisecond)
-		defer spriteTicker.Stop()
-		for {
-			select {
-			case <-spriteTicker.C:
-				// Cambia el sprite de Jerry aquí
-				// Ajusta la dirección de animación según sea necesario
-				// Actualiza la imagen de Jerry en la pantalla
-
-				// Por ejemplo, puedes hacer que Jerry tenga una animación básica de caminar
-				if jerry.GetXMov() < 0 {
-					// Movimiento hacia la izquierda, ajusta los sprites para la izquierda
-					jerry.SetFrameY(jerry.GetLeftY())
-				} else if jerry.GetXMov() > 0 {
-					// Movimiento hacia la derecha, ajusta los sprites para la derecha
-					jerry.SetFrameY(jerry.GetRightY())
-				} else if jerry.GetYMov() < 0 {
-					// Movimiento hacia arriba, ajusta los sprites para arriba
-					jerry.SetFrameY(jerry.GetUpY())
-				} else if jerry.GetYMov() > 0 {
-					// Movimiento hacia abajo, ajusta los sprites para abajo
-					jerry.SetFrameY(jerry.GetDownY())
-				} else {
-					// Jerry no está en movimiento, establece la animación de caminar hacia abajo
-					jerry.SetFrameY(jerry.GetDownY())
-				}
-
-				jerry.SetFrameX((jerry.GetFrameX() + 1) % jerry.GetCyclesX())
-			}
-
-			// Lógica para el movimiento automático de Jerry
-			// Esto puede ser similar a la lógica que ya tienes para mover a Jerry hacia Tom
-
-			// Obtiene la posición actual de Tom
-			tomX, tomY := player.GetX(), player.GetY()
-
-			// Calcula la diferencia en coordenadas entre Jerry y Tom
-			deltaX := jerry.GetX() - tomX
-			deltaY := jerry.GetY() - tomY
-
-			// Calcula la nueva posición de Jerry en dirección opuesta a Tom, pero un poco más alejada
-			// y ajusta la dirección en función de la distancia a Tom
-			randX := jerry.GetX()
-			randY := jerry.GetY() + 2
-
-			// Ajusta la dirección horizontal
-			if deltaX != 0 {
-				if deltaX > 0 {
-					// Tom está a la izquierda de Jerry, ajusta los sprites para la izquierda
-					jerry.SetFrameY(jerry.GetRightY())
-				} else {
-					// Tom está a la derecha de Jerry, ajusta los sprites para la derecha
-					jerry.SetFrameY(jerry.GetLeftY())
-				}
-				randX += 2 * deltaX
-			} else if deltaY != 0 {
-				randY += 2 * deltaY
-			}
-
-			// Verifica si la nueva posición está dentro de los límites del juego y ajusta si es necesario
-			if randX < 10 {
-				randX = 10
-			}
-			if randX > 1074 - jerry.GetWidth() {
-				randX = 1074 - jerry.GetWidth()
-			}
-			if randY < 200 {
-				randY = 200
-			}
-			if randY > 240-jerry.GetHeight() {
-				randY = 240 - jerry.GetHeight()
-			}
-
-			// Calcula la cantidad de pasos necesarios para llegar a la nueva posición
-			steps := 35
-			stepX := float64(randX-jerry.GetX()) / float64(steps)
-			stepY := float64(randY-jerry.GetY()) / float64(steps)
-
-			for i := 0; i < steps; i++ {
-				// Realiza un paso hacia la nueva posición
-				jerry.SetX(jerry.GetX() + int(stepX))
-				jerry.SetY(jerry.GetY() + int(stepY))
-				// Verifica si la nueva posición está dentro de los límites del juego y ajusta si es necesario
-
-				if jerry.GetX() < 10 {
-					jerry.SetX(10)
-				}
-				if jerry.GetX() > 1074-jerry.GetWidth() {
-					jerry.SetX(1074 - jerry.GetWidth())
-				}
-				if jerry.GetY() < 100 {
-					jerry.SetY(100)
-				}
-				if jerry.GetY() > 240-jerry.GetHeight() {
-					jerry.SetY(240 - jerry.GetHeight())
-				}
-				// Actualiza la pantalla después de cada paso
-				c.Refresh()
-
-				// Pausa para hacer que el movimiento sea visible
-				time.Sleep(time.Millisecond * 10)
-			}
-		}
-}()
-
-	// Goroutine para mover a Spike
-go func() {
-		// Temporizador para cambiar el sprite de Spike
-		spriteTicker := time.NewTicker(200 * time.Millisecond)
-		defer spriteTicker.Stop()
-		for {
-			select {
-			case <-spriteTicker.C:
-				// Obtiene la posición actual de Tom (jugador)
-				tomX, tomY := player.GetX(), player.GetY()
-
-				// Calcula la diferencia en coordenadas entre Spike y Tom
-				deltaX := tomX - spike.GetX()
-				deltaY := tomY - spike.GetY()
-
-				// Calcula la distancia entre Spike y Tom
-				distance := math.Sqrt(float64(deltaX*deltaX + deltaY*deltaY))
-
-				// Define la velocidad de Spike (ajusta este valor según sea necesario)
-				spikeSpeed := 15
-
-				// Calcula la nueva posición de Spike hacia Tom
-				if distance > 0 {
-					// Calcula las cantidades de movimiento en las direcciones x e y
-					moveX := spikeSpeed * deltaX / int(distance)
-					moveY := spikeSpeed * deltaY / int(distance)
-
-					// Actualiza la posición de Spike hacia Tom
-					spike.SetX(spike.GetX() + moveX)
-					spike.SetY(spike.GetY() + moveY)
-				}
-				// Actualiza la pantalla después de cada movimiento de Spike
-				c.Refresh()
-			}
-		}
-}()
-
-	// Goroutine para contador
-go func() {
-		for !hasWon {
-			time.Sleep(time.Millisecond)
-		}
-
-		elapsedDuration := time.Since(startTime)
-		elapsedSeconds := int(elapsedDuration.Seconds())
-
-		// Formatea la duración como "Xs"
-		elapsedTimeString := strconv.Itoa(elapsedSeconds) + "s"
-
-		wonLabel := canvas.NewText("Has ganado con un tiempo de "+elapsedTimeString, color.White)
-		wonLabel.TextSize = 30
-		wonLabel.TextStyle = fyne.TextStyle{Bold: true}
-
-		// Crea un contenedor para mostrar el mensaje y el tiempo
-		winContainer := container.NewVBox(wonLabel)
-		winContainer.Layout = layout.NewCenterLayout()
-
-		// Actualiza el contenido de la ventana para mostrar el mensaje y el tiempo
-		w.SetContent(winContainer)
-}()
+	go PlayBackgroundAudio();
+	go JerryMovement(jerry, player, c);
+	go SpikeMovement(spike, player, c);
+	go TomMovement(w, game, player )
+	go TimerLabel(hasWon, startTime, w);
 
 	infoContainer := container.NewVBox(timerLabel, scoreLabel)
 	c.Add(infoContainer)
 	w.SetContent(c)
-
-	w.Canvas().SetOnTypedKey(func(k *fyne.KeyEvent) {
-		switch k.Name {
-		case fyne.KeyDown:
-			if player.GetY() < int(game.GetHeight())-player.GetHeight()-game.GetMargin() {
-				player.SetYMov(player.GetSpeed())
-			}
-			player.SetFrameY(player.GetDownY())
-		case fyne.KeyUp:
-			if player.GetY() > 200 {
-				player.SetYMov(-(player.GetSpeed()))
-			}
-			player.SetFrameY(player.GetUpY())
-		case fyne.KeyLeft:
-			if player.GetX() > game.GetMargin() {
-				player.SetXMov(-(player.GetSpeed()))
-			}
-			player.SetFrameY(player.GetLeftY())
-		case fyne.KeyRight:
-			if player.GetX() < int(game.GetWidth())-(player.GetWidth())-game.GetMargin() {
-				player.SetXMov(player.GetSpeed())
-			}
-			player.SetFrameY(player.GetRightY())
-		}
-	})
 	w.CenterOnScreen()
 	w.ShowAndRun()
 }
