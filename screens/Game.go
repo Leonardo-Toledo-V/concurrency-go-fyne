@@ -93,10 +93,9 @@ func VideogameSettings(w fyne.Window, player *models.Tom, jerry *models.Jerry, s
 				randY := rand.Intn(121) + 100
 				jerry.SetX(randX)
 				jerry.SetY(randY)
-				// Incrementa el marcador cuando atrapas a Jerry
 				score++
 				scoreLabel.Text = "Score: " + strconv.Itoa(score)
-				if score == 8 && !hasWon {
+				if score == 1 && !hasWon {
 					hasWon = true
 					winTime = time.Now()
 					TimerLabel(hasWon, startTime, w)
@@ -123,7 +122,7 @@ func VideogameSettings(w fyne.Window, player *models.Tom, jerry *models.Jerry, s
 				spike.SetX(randX)
 				spike.SetY(randY)
 			}
-
+			//Modifica la posicion de los sprites de Tom.
 			if player.GetXMov() != 0 || player.GetYMov() != 0 {
 				player.SetX(player.GetX() + player.GetXMov())
 				player.SetY(player.GetY() + player.GetYMov())
@@ -296,6 +295,10 @@ func SpikeMovement(spike *models.Spike, player *models.Tom, c *fyne.Container) {
 }
 
 func TimerLabel(hasWon bool, startTime time.Time, w fyne.Window) {
+	backgroundImage := canvas.NewImageFromFile("assets/win-screen.png");
+	backgroundImage.Resize(fyne.NewSize(1128, 628,));
+	backgroundImage.Move(fyne.NewPos(0,0));
+
 	for !hasWon {
 		time.Sleep(time.Millisecond)
 	}
@@ -303,13 +306,14 @@ func TimerLabel(hasWon bool, startTime time.Time, w fyne.Window) {
 	elapsedSeconds := int(elapsedDuration.Seconds())
 	elapsedTimeString := strconv.Itoa(elapsedSeconds) + "s"
 
-	wonLabel := canvas.NewText("Has ganado con un tiempo de "+elapsedTimeString, color.White)
+	wonLabel := canvas.NewText("Has ganado con un tiempo de "+ elapsedTimeString, color.White)
 	wonLabel.TextSize = 30
 	wonLabel.TextStyle = fyne.TextStyle{Bold: true}
-	winContainer := container.NewVBox(wonLabel)
-	winContainer.Layout = layout.NewCenterLayout()
+	wonLabel.Move(fyne.NewPos(270,580))
 
-	w.SetContent(winContainer)
+	w.SetContent(container.NewWithoutLayout(backgroundImage, wonLabel))
+	w.Resize(fyne.NewSize(1128, 628))
+	w.CenterOnScreen()
 }
 
 func TomMovement(w fyne.Window, game *models.Game, player *models.Tom) {
